@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docházka</title>
+<meta name="theme-color" content="#1A3C5E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Docházka">
+<link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22Doch%C3%A1zkov%C3%BD+syst%C3%A9m%22%2C%22short_name%22%3A%22Doch%C3%A1zka%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%231A3C5E%22%2C%22theme_color%22%3A%22%231A3C5E%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAADdgAAA3YBfdWCzAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAMzSURBVHic7d07jhNBEAbg6vXb%2Bd%2F7A3iCPQIJCQkJCQkJCQkJCe%2F%2FAyQkJCQkJCQkJCQkJCRs7%2FYPbmY8s12zVV0953QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root {
+    --bg: #F0F4F8;
+    --surface: #FFFFFF;
+    --primary: #1A3C5E;
+    --accent: #2E7D9F;
+    --accent-light: #E8F4F8;
+    --success: #2D7A4F;
+    --success-light: #E8F5EE;
+    --danger: #C0392B;
+    --danger-light: #FDECEA;
+    --warning: #E67E22;
+    --warning-light: #FEF3E2;
+    --vacation: #7B5EA7;
+    --vacation-light: #F0EBF8;
+    --sick: #D44000;
+    --sick-light: #FDF0EA;
+    --text: #1A2733;
+    --text-muted: #6B7A8D;
+    --border: #DDE3EA;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(26,60,94,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ── LOGIN ── */
+  #screen-login { align-items: center; justify-content: center; background: linear-gradient(135deg, #1A3C5E 0%, #2E7D9F 100%); }
+  .login-card { background: var(--surface); border-radius: 20px; padding: 40px 36px; width: 340px; box-shadow: 0 8px 40px rgba(0,0,0,0.18); text-align: center; }
+  .login-logo { font-size: 2.4rem; margin-bottom: 6px; }
+  .login-card h1 { font-size: 1.4rem; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+  .login-card p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 24px; }
+  .pin-display { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+  .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border); background: transparent; transition: background .15s; }
+  .pin-dot.filled { background: var(--primary); border-color: var(--primary); }
+  .pin-numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .pin-btn { background: var(--bg); border: none; border-radius: 10px; height: 54px; font-size: 1.3rem; font-weight: 600; color: var(--text); cursor: pointer; transition: background .12s, transform .1s; }
+  .pin-btn:hover { background: var(--accent-light); }
+  .pin-btn:active { transform: scale(.95); }
+  .pin-btn.del { font-size: 1rem; color: var(--danger); }
+  .pin-error { color: var(--danger); font-size: 0.82rem; margin-top: 10px; min-height: 18px; }
+  .login-admin-btn { width: 100%; margin-top: 14px; padding: 10px; border-radius: 9px; border: 1.5px solid var(--border); background: transparent; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background .15s, color .15s; }
+  .login-admin-btn:hover { background: var(--bg); color: var(--primary); border-color: var(--primary); }
+  .login-mode-label { font-size: 0.78rem; color: var(--accent); font-weight: 600; margin-bottom: 10px; min-height: 18px; }
+
+  /* ── TOP BAR ── */
+  .topbar { background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; flex-shrink: 0; }
+  .topbar-title { font-size: 1rem; font-weight: 700; }
+  .topbar-user { font-size: 0.85rem; opacity: .8; }
+  .topbar-actions { display: flex; gap: 8px; }
+  .topbar-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; cursor: pointer; transition: background .15s; }
+  .topbar-btn:hover { background: rgba(255,255,255,0.25); }
+  .topbar-btn.danger { background: rgba(192,57,43,0.6); }
+
+  /* ── NAV TABS ── */
+  .nav-tabs { background: var(--surface); border-bottom: 1.5px solid var(--border); display: flex; flex-shrink: 0; }
+  .nav-tab { flex: 1; padding: 12px 8px; text-align: center; font-size: 0.82rem; font-weight: 600; color: var(--text-muted); border: none; background: none; cursor: pointer; border-bottom: 2.5px solid transparent; transition: color .15s, border-color .15s; }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── CONTENT ── */
+  .content { flex: 1; overflow-y: auto; padding: 20px 16px; max-width: 600px; width: 100%; margin: 0 auto; }
+
+  /* ── CARDS ── */
+  .card { background: var(--surface); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; }
+  .card-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 12px; }
+
+  /* ── CLOCK ── */
+  .clock-display { text-align: center; margin: 8px 0 20px; }
+  .clock-time { font-size: 3rem; font-weight: 700; color: var(--primary); letter-spacing: -1px; }
+  .clock-date { font-size: 0.88rem; color: var(--text-muted); margin-top: 2px; }
+  .clock-status { display: inline-flex; align-items: center; gap: 6px; background: var(--success-light); color: var(--success); border-radius: 20px; padding: 4px 14px; font-size: 0.82rem; font-weight: 600; margin-top: 8px; }
+  .clock-status.out { background: var(--bg); color: var(--text-muted); }
+  .clock-status.break { background: var(--warning-light); color: var(--warning); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .btn-row { display: flex; gap: 10px; }
+  .btn { flex: 1; padding: 13px 10px; border-radius: 10px; border: none; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: background .15s, transform .1s, opacity .15s; }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: #1e4a72; }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover:not(:disabled) { background: #256641; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover:not(:disabled) { background: #a93226; }
+  .btn-warning { background: var(--warning); color: #fff; }
+  .btn-warning:hover:not(:disabled) { background: #ca6f1e; }
+  .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+  .btn-outline:hover:not(:disabled) { background: var(--bg); }
+  .btn-accent { background: var(--accent); color: #fff; }
+  .btn-accent:hover:not(:disabled) { background: #266b89; }
+
+  /* ── TODAY LOG ── */
+  .log-entry { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+  .log-entry:last-child { border-bottom: none; }
+  .log-type { font-weight: 600; }
+  .log-type.in { color: var(--success); }
+  .log-type.out { color: var(--danger); }
+  .log-type.break-start { color: var(--warning); }
+  .log-type.break-end { color: var(--accent); }
+  .today-summary { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; }
+  .today-stat { font-size: 0.82rem; color: var(--text-muted); }
+  .today-stat span { font-weight: 700; color: var(--text); }
+
+  /* ── CALENDAR ── */
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .cal-nav { background: none; border: 1.5px solid var(--border); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text); }
+  .cal-month { font-size: 1rem; font-weight: 700; color: var(--primary); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-day-name { text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); padding: 4px 0; text-transform: uppercase; }
+  .cal-day { border-radius: 8px; padding: 6px 4px; text-align: center; font-size: 0.82rem; cursor: pointer; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px; transition: background .12s; position: relative; }
+  .cal-day:empty { background: transparent; cursor: default; }
+  .cal-day.other-month { color: var(--border); cursor: default; }
+  .cal-day.today { font-weight: 800; }
+  .cal-day.today .day-num { background: var(--primary); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
+  .cal-day.weekend { background: #F8F9FB; }
+  .cal-day.holiday { background: #FFF8E7; }
+  .cal-day.vacation { background: var(--vacation-light); }
+  .cal-day.sick { background: var(--sick-light); }
+  .cal-day.has-record { border: 1.5px solid var(--accent); }
+  .day-num { font-size: 0.82rem; }
+  .day-badge { font-size: 0.62rem; font-weight: 700; border-radius: 4px; padding: 1px 4px; line-height: 1.3; }
+  .day-badge.vacation { background: var(--vacation); color: #fff; }
+  .day-badge.sick { background: var(--sick); color: #fff; }
+  .day-badge.holiday { background: var(--warning); color: #fff; }
+  .day-badge.work { background: var(--success); color: #fff; }
+  .cal-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; font-size: 0.75rem; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  /* ── DAY MODAL ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 16px; width: 100%; max-width: 360px; padding: 24px; box-shadow: 0 8px 40px rgba(0,0,0,0.18); }
+  .modal h3 { font-size: 1rem; font-weight: 700; color: var(--primary); margin-bottom: 16px; }
+  .modal-actions { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .modal-btn { padding: 11px 16px; border-radius: 9px; border: none; font-size: 0.88rem; font-weight: 600; cursor: pointer; text-align: left; transition: background .12s; }
+  .modal-btn.vacation { background: var(--vacation-light); color: var(--vacation); }
+  .modal-btn.vacation:hover { background: #e0d4f5; }
+  .modal-btn.sick { background: var(--sick-light); color: var(--sick); }
+  .modal-btn.sick:hover { background: #f9e0d0; }
+  .modal-btn.clear { background: var(--bg); color: var(--text-muted); }
+  .modal-btn.clear:hover { background: var(--border); }
+  .modal-close { width: 100%; padding: 10px; border-radius: 9px; border: 1.5px solid var(--border); background: transparent; font-size: 0.88rem; cursor: pointer; color: var(--text-muted); }
+
+  /* ── ADMIN ── */
+  .admin-section { margin-bottom: 20px; }
+  .admin-section h3 { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 12px; }
+  .employee-list { display: flex; flex-direction: column; gap: 8px; }
+  .employee-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg); border-radius: 9px; padding: 11px 14px; }
+  .employee-name { font-weight: 600; font-size: 0.9rem; }
+  .employee-pin { font-size: 0.78rem; color: var(--text-muted); }
+  .employee-del { background: var(--danger-light); border: none; color: var(--danger); border-radius: 7px; padding: 5px 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+  .employee-del:hover { background: #fad7d4; }
+  .form-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .form-input { flex: 1; padding: 10px 12px; border-radius: 9px; border: 1.5px solid var(--border); font-size: 0.9rem; color: var(--text); background: var(--surface); outline: none; transition: border-color .15s; }
+  .form-input:focus { border-color: var(--accent); }
+  .form-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; display: block; }
+  .report-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+  .report-controls select { padding: 9px 12px; border-radius: 9px; border: 1.5px solid var(--border); font-size: 0.88rem; background: var(--surface); color: var(--text); outline: none; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .stat-card { background: var(--bg); border-radius: 9px; padding: 12px; }
+  .stat-label { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .stat-value { font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-top: 2px; }
+  .notice { background: var(--accent-light); border-radius: 9px; padding: 12px 14px; font-size: 0.82rem; color: var(--accent); line-height: 1.5; margin-bottom: 14px; }
+  .notice strong { display: block; margin-bottom: 2px; }
+
+  /* ── TOAST ── */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--primary); color: #fff; padding: 10px 22px; border-radius: 22px; font-size: 0.88rem; font-weight: 600; z-index: 200; transition: transform .3s; pointer-events: none; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 400px) {
+    .cal-day { min-height: 38px; padding: 4px 2px; }
+    .clock-time { font-size: 2.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="screen-login" class="screen active">
+  <div class="login-card">
+    <div class="login-logo">🏢</div>
+    <h1>Docházkový systém</h1>
+    <p id="login-subtitle">Zadejte svůj PIN kód</p>
+    <div class="login-mode-label" id="login-mode-label"></div>
+    <div class="pin-display" id="pin-display">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-numpad">
+      <button class="pin-btn" onclick="pinKey('1')">1</button>
+      <button class="pin-btn" onclick="pinKey('2')">2</button>
+      <button class="pin-btn" onclick="pinKey('3')">3</button>
+      <button class="pin-btn" onclick="pinKey('4')">4</button>
+      <button class="pin-btn" onclick="pinKey('5')">5</button>
+      <button class="pin-btn" onclick="pinKey('6')">6</button>
+      <button class="pin-btn" onclick="pinKey('7')">7</button>
+      <button class="pin-btn" onclick="pinKey('8')">8</button>
+      <button class="pin-btn" onclick="pinKey('9')">9</button>
+      <button class="pin-btn" style="grid-column:1" onclick="pinKey('0')">0</button>
+      <button class="pin-btn del" style="grid-column:3" onclick="pinDel()">⌫</button>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+    <button class="login-admin-btn" id="admin-toggle-btn" onclick="toggleAdminMode()">🔐 Administrátor</button>
+  </div>
+</div>
+
+<!-- EMPLOYEE SCREEN -->
+<div id="screen-employee" class="screen">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">📋 Docházka</div>
+      <div class="topbar-user" id="topbar-name"></div>
+    </div>
+    <div class="topbar-actions">
+      <button class="topbar-btn danger" onclick="logout()">Odhlásit</button>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab('tab-clock')">⏰ Příchod / Odchod</button>
+    <button class="nav-tab" onclick="showTab('tab-calendar')">📅 Kalendář</button>
+  </div>
+  <div class="content">
+
+    <!-- CLOCK TAB -->
+    <div id="tab-clock">
+      <div class="card">
+        <div class="clock-display">
+          <div class="clock-time" id="clock-time">--:--:--</div>
+          <div class="clock-date" id="clock-date"></div>
+          <div id="clock-status-badge" class="clock-status out"><div class="status-dot"></div><span id="clock-status-text">Odhlášen</span></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-success" id="btn-in" onclick="clockIn()">▶ Příchod</button>
+          <button class="btn btn-warning" id="btn-break" onclick="toggleBreak()" disabled>⏸ Přerušení</button>
+          <button class="btn btn-danger" id="btn-out" onclick="clockOut()" disabled>⏹ Odchod</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Dnešní záznamy</div>
+        <div id="today-log"></div>
+        <div class="today-summary" id="today-summary"></div>
+      </div>
+    </div>
+
+    <!-- CALENDAR TAB -->
+    <div id="tab-calendar" style="display:none">
+      <div class="card">
+        <div class="notice">
+          <strong>ℹ️ Jak používat kalendář</strong>
+          Klikněte na libovolný den a označte ho jako <strong>dovolenou</strong> nebo <strong>pracovní neschopnost</strong>.
+        </div>
+        <div class="cal-header">
+          <button class="cal-nav" onclick="calNav(-1)">‹</button>
+          <div class="cal-month" id="cal-month-title"></div>
+          <button class="cal-nav" onclick="calNav(1)">›</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="cal-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--vacation)"></div>Dovolená</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--sick)"></div>Nemoc</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--success)"></div>Odpracováno</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--warning)"></div>Státní svátek</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ADMIN SCREEN -->
+<div id="screen-admin" class="screen">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">⚙️ Administrace</div>
+      <div class="topbar-user">Správce systému</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="topbar-btn" onclick="exportBackup()">💾 Záloha</button>
+      <button class="topbar-btn danger" onclick="logout()">Odhlásit</button>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showAdminTab('admin-employees')">👥 Zaměstnanci</button>
+    <button class="nav-tab" onclick="showAdminTab('admin-reports')">📊 Přehledy</button>
+  </div>
+  <div class="content">
+
+    <!-- EMPLOYEES TAB -->
+    <div id="admin-employees">
+      <div class="card">
+        <div class="card-title">Přidat zaměstnance</div>
+        <div class="form-row">
+          <div style="flex:2">
+            <label class="form-label">Jméno a příjmení</label>
+            <input class="form-input" id="new-name" placeholder="Jan Novák" maxlength="40">
+          </div>
+          <div style="flex:1">
+            <label class="form-label">PIN (4 číslice)</label>
+            <input class="form-input" id="new-pin" placeholder="1234" maxlength="4" type="password">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addEmployee()">+ Přidat zaměstnance</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Seznam zaměstnanců</div>
+        <div class="employee-list" id="employee-list"></div>
+      </div>
+      <div class="card">
+        <div class="notice">
+          <strong>ℹ️ Záloha dat</strong>
+          Tlačítko "Záloha" v hlavičce stáhne JSON soubor se všemi daty. Uchovávejte ho pravidelně.
+        </div>
+        <div class="form-row">
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="importBackup(event)">
+          <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('import-file').click()">📂 Obnovit zálohu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS TAB -->
+    <div id="admin-reports" style="display:none">
+      <div class="card">
+        <div class="card-title">Generovat přehled</div>
+        <div class="report-controls">
+          <div>
+            <label class="form-label">Zaměstnanec</label>
+            <select id="report-employee"></select>
+          </div>
+          <div>
+            <label class="form-label">Měsíc</label>
+            <select id="report-month"></select>
+          </div>
+          <div>
+            <label class="form-label">Rok</label>
+            <select id="report-year"></select>
+          </div>
+        </div>
+        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-accent" style="flex:1" onclick="previewReport()">👁 Náhled</button>
+          <button class="btn btn-primary" style="flex:1" onclick="generatePDF()">📄 Exportovat PDF</button>
+        </div>
+      </div>
+      <div id="report-preview"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DAY MODAL -->
+<div class="modal-overlay" id="day-modal">
+  <div class="modal">
+    <h3 id="modal-day-title">Označit den</h3>
+    <div class="modal-actions">
+      <button class="modal-btn vacation" onclick="setDayType('vacation')">🏖️ Dovolená</button>
+      <button class="modal-btn sick" onclick="setDayType('sick')">🤒 Pracovní neschopnost</button>
+      <button class="modal-btn clear" onclick="setDayType(null)">✕ Odebrat označení</button>
+    </div>
+    <button class="modal-close" onclick="closeDayModal()">Zavřít</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  STATE & STORAGE
+// ══════════════════════════════════════════
+let DB = {
+  employees: [],
+  attendance: {},  // { "empId": { "YYYY-MM-DD": { records:[], dayType:null } } }
+  adminPin: "0000"
+};
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem('dochazka_db');
+    if (raw) DB = JSON.parse(raw);
+    // ensure adminPin exists
+    if (!DB.adminPin) DB.adminPin = "0000";
+    if (!DB.employees) DB.employees = [];
+    if (!DB.attendance) DB.attendance = {};
+  } catch(e) {
+    console.warn('DB load error', e);
+  }
+}
+
+function saveDB() {
+  try {
+    localStorage.setItem('dochazka_db', JSON.stringify(DB));
+  } catch(e) {
+    showToast('⚠️ Chyba při ukládání dat!');
+  }
+}
+
+// ══════════════════════════════════════════
+//  CZECH PUBLIC HOLIDAYS
+// ══════════════════════════════════════════
+const HOLIDAYS = {};
+function addHolidays(year) {
+  const fixed = [
+    `${year}-01-01`, `${year}-05-01`, `${year}-05-08`,
+    `${year}-07-05`, `${year}-07-06`, `${year}-09-28`,
+    `${year}-10-28`, `${year}-11-17`, `${year}-12-24`,
+    `${year}-12-25`, `${year}-12-26`
+  ];
+  fixed.forEach(d => HOLIDAYS[d] = true);
+  // Easter (Good Friday + Easter Monday)
+  const [gf, em] = easterDates(year);
+  HOLIDAYS[gf] = true;
+  HOLIDAYS[em] = true;
+}
+function easterDates(year) {
+  const a = year % 19, b = Math.floor(year/100), c = year % 100;
+  const d = Math.floor(b/4), e = b % 4, f = Math.floor((b+8)/25);
+  const g = Math.floor((b-f+1)/3), h = (19*a+b-d-g+15) % 30;
+  const i = Math.floor(c/4), k = c % 4;
+  const l = (32+2*e+2*i-h-k) % 7;
+  const m = Math.floor((a+11*h+22*l)/451);
+  const month = Math.floor((h+l-7*m+114)/31);
+  const day = ((h+l-7*m+114) % 31) + 1;
+  const easter = new Date(year, month-1, day);
+  const gf = new Date(easter); gf.setDate(gf.getDate()-2);
+  const em = new Date(easter); em.setDate(em.getDate()+1);
+  return [fmt(gf), fmt(em)];
+}
+for(let y=2024; y<=2030; y++) addHolidays(y);
+
+function fmt(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtTime(d) {
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function fmtTimeS(d) {
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+}
+
+// ══════════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════════
+let pinBuffer = "";
+let currentUser = null; // { id, name, isAdmin }
+let adminMode = false;  // true = entering admin PIN
+
+function toggleAdminMode() {
+  adminMode = !adminMode;
+  pinBuffer = ''; updatePinDisplay();
+  document.getElementById('pin-error').textContent = '';
+  if (adminMode) {
+    document.getElementById('login-mode-label').textContent = '🔐 Režim administrátora';
+    document.getElementById('login-subtitle').textContent = 'Zadejte administrátorský PIN';
+    document.getElementById('admin-toggle-btn').textContent = '← Zpět na přihlášení';
+    document.getElementById('admin-toggle-btn').style.color = 'var(--accent)';
+    document.getElementById('admin-toggle-btn').style.borderColor = 'var(--accent)';
+  } else {
+    document.getElementById('login-mode-label').textContent = '';
+    document.getElementById('login-subtitle').textContent = 'Zadejte svůj PIN kód';
+    document.getElementById('admin-toggle-btn').textContent = '🔐 Administrátor';
+    document.getElementById('admin-toggle-btn').style.color = '';
+    document.getElementById('admin-toggle-btn').style.borderColor = '';
+  }
+}
+
+function pinKey(k) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += k;
+  updatePinDisplay();
+  if (pinBuffer.length === 4) attemptLogin();
+}
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0,-1);
+  updatePinDisplay();
+  document.getElementById('pin-error').textContent = '';
+}
+function updatePinDisplay() {
+  for(let i=0;i<4;i++) {
+    document.getElementById('pd'+i).classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+function attemptLogin() {
+  if (adminMode) {
+    if (pinBuffer === DB.adminPin) {
+      currentUser = { id: '__admin__', name: 'Administrátor', isAdmin: true };
+      adminMode = false;
+      showScreen('screen-admin');
+      renderAdminEmployees();
+      renderReportControls();
+    } else {
+      document.getElementById('pin-error').textContent = 'Nesprávný PIN administrátora.';
+      pinBuffer = ''; updatePinDisplay();
+    }
+    return;
+  }
+  // Employee login — find by PIN
+  const emp = DB.employees.find(e => e.pin === pinBuffer);
+  if (emp) {
+    currentUser = { id: emp.id, name: emp.name, isAdmin: false };
+    showScreen('screen-employee');
+    document.getElementById('topbar-name').textContent = emp.name;
+    initEmployeeView();
+  } else {
+    document.getElementById('pin-error').textContent = 'PIN nenalezen. Zkuste znovu.';
+    pinBuffer = ''; updatePinDisplay();
+  }
+}
+function logout() {
+  currentUser = null; pinBuffer = ''; adminMode = false;
+  updatePinDisplay();
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('login-mode-label').textContent = '';
+  document.getElementById('login-subtitle').textContent = 'Zadejte svůj PIN kód';
+  document.getElementById('admin-toggle-btn').textContent = '🔐 Administrátor';
+  document.getElementById('admin-toggle-btn').style.color = '';
+  document.getElementById('admin-toggle-btn').style.borderColor = '';
+  stopClock(); showScreen('screen-login');
+}
+
+// ══════════════════════════════════════════
+//  SCREEN / TAB MANAGEMENT
+// ══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showTab(id) {
+  document.querySelectorAll('#screen-employee .nav-tab').forEach((t,i) => {
+    const ids = ['tab-clock','tab-calendar'];
+    t.classList.toggle('active', ids[i]===id);
+    document.getElementById(ids[i]).style.display = ids[i]===id ? '' : 'none';
+  });
+  if (id === 'tab-calendar') renderCalendar();
+}
+function showAdminTab(id) {
+  const ids = ['admin-employees','admin-reports'];
+  document.querySelectorAll('#screen-admin .nav-tab').forEach((t,i) => {
+    t.classList.toggle('active', ids[i]===id);
+    document.getElementById(ids[i]).style.display = ids[i]===id ? '' : 'none';
+  });
+}
+
+// ══════════════════════════════════════════
+//  CLOCK WIDGET
+// ══════════════════════════════════════════
+let clockInterval = null;
+function startClock() {
+  updateClockDisplay();
+  clockInterval = setInterval(updateClockDisplay, 1000);
+}
+function stopClock() {
+  if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
+}
+function updateClockDisplay() {
+  const now = new Date();
+  document.getElementById('clock-time').textContent = fmtTimeS(now);
+  document.getElementById('clock-date').textContent = now.toLocaleDateString('cs-CZ', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+}
+
+// ══════════════════════════════════════════
+//  ATTENDANCE LOGIC
+// ══════════════════════════════════════════
+function getTodayKey() { return fmt(new Date()); }
+function getEmpAttendance(empId) {
+  if (!DB.attendance[empId]) DB.attendance[empId] = {};
+  return DB.attendance[empId];
+}
+function getTodayRecord(empId) {
+  const att = getEmpAttendance(empId);
+  const key = getTodayKey();
+  if (!att[key]) att[key] = { records: [], dayType: null };
+  return att[key];
+}
+
+function initEmployeeView() {
+  startClock();
+  updateClockButtons();
+  renderTodayLog();
+  calYear = new Date().getFullYear();
+  calMonth = new Date().getMonth();
+}
+
+function getLastRecord(empId) {
+  const today = getTodayRecord(empId);
+  return today.records[today.records.length - 1] || null;
+}
+
+function clockIn() {
+  const rec = getTodayRecord(currentUser.id);
+  rec.records.push({ type:'in', time: new Date().toISOString() });
+  saveDB(); updateClockButtons(); renderTodayLog();
+  showToast('✅ Příchod zaznamenán');
+}
+function clockOut() {
+  const rec = getTodayRecord(currentUser.id);
+  rec.records.push({ type:'out', time: new Date().toISOString() });
+  saveDB(); updateClockButtons(); renderTodayLog();
+  showToast('👋 Odchod zaznamenán');
+}
+function toggleBreak() {
+  const rec = getTodayRecord(currentUser.id);
+  const last = rec.records[rec.records.length-1];
+  if (last && last.type === 'break-start') {
+    rec.records.push({ type:'break-end', time: new Date().toISOString() });
+    showToast('▶ Přerušení ukončeno');
+  } else {
+    rec.records.push({ type:'break-start', time: new Date().toISOString() });
+    showToast('⏸ Přerušení zahájeno');
+  }
+  saveDB(); updateClockButtons(); renderTodayLog();
+}
+
+function updateClockButtons() {
+  const rec = getTodayRecord(currentUser.id);
+  const last = rec.records[rec.records.length-1];
+  const type = last ? last.type : null;
+  const isClockedIn = type === 'in' || type === 'break-start' || type === 'break-end';
+  const isOnBreak = type === 'break-start';
+  const isClockedOut = type === 'out';
+
+  document.getElementById('btn-in').disabled = isClockedIn || isClockedOut;
+  document.getElementById('btn-break').disabled = !isClockedIn || isClockedOut;
+  document.getElementById('btn-out').disabled = !isClockedIn;
+  document.getElementById('btn-break').textContent = isOnBreak ? '▶ Ukončit přerušení' : '⏸ Přerušení';
+
+  const badge = document.getElementById('clock-status-badge');
+  const txt = document.getElementById('clock-status-text');
+  badge.className = 'clock-status';
+  if (isClockedOut) { badge.classList.add('out'); txt.textContent = 'Odhlášen'; }
+  else if (isOnBreak) { badge.classList.add('break'); txt.textContent = 'Přerušení'; }
+  else if (isClockedIn) { txt.textContent = 'Přítomen'; }
+  else { badge.classList.add('out'); txt.textContent = 'Odhlášen'; }
+}
+
+function renderTodayLog() {
+  const rec = getTodayRecord(currentUser.id);
+  const log = document.getElementById('today-log');
+  const labels = { in:'Příchod', out:'Odchod', 'break-start':'Přerušení začátek', 'break-end':'Přerušení konec' };
+  if (!rec.records.length) { log.innerHTML = '<div style="color:var(--text-muted);font-size:.85rem;padding:8px 0">Žádné záznamy pro dnešní den.</div>'; }
+  else {
+    log.innerHTML = rec.records.map(r => `
+      <div class="log-entry">
+        <span class="log-type ${r.type}">${labels[r.type]||r.type}</span>
+        <span>${new Date(r.time).toLocaleTimeString('cs-CZ')}</span>
+      </div>`).join('');
+  }
+  // summary
+  const {worked, breaks} = calcDayHours(rec.records);
+  const sum = document.getElementById('today-summary');
+  sum.innerHTML = `<div class="today-stat">Odpracováno: <span>${decToHM(worked)}</span></div>
+    <div class="today-stat">Přerušení: <span>${decToHM(breaks)}</span></div>`;
+}
+
+// Calculate worked hours and break hours from records array
+// Returns {worked: decimal hours, breaks: decimal hours, firstIn, lastOut, breakPairs}
+function calcDayHours(records) {
+  let worked = 0, breaks = 0;
+  let inTime = null, breakStartTime = null;
+  let firstIn = null, lastOut = null;
+  let breakPairs = []; // [{from, to}]
+  for (const r of records) {
+    const t = new Date(r.time);
+    if (r.type === 'in') { inTime = t; if (!firstIn) firstIn = t; }
+    else if (r.type === 'out') { if (inTime) { worked += (t-inTime)/3600000; inTime=null; } lastOut=t; }
+    else if (r.type === 'break-start') { if (inTime) { worked += (t-inTime)/3600000; inTime=null; } breakStartTime=t; }
+    else if (r.type === 'break-end') { if (breakStartTime) { const bd=(t-breakStartTime)/3600000; breaks+=bd; breakPairs.push({from:breakStartTime,to:t}); breakStartTime=null; } inTime=t; }
+  }
+  return {worked, breaks, firstIn, lastOut, breakPairs};
+}
+
+function decToHM(dec) {
+  const h = Math.floor(dec), m = Math.round((dec-h)*60);
+  return `${h}h ${String(m).padStart(2,'0')}m`;
+}
+
+// ══════════════════════════════════════════
+//  CALENDAR
+// ══════════════════════════════════════════
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let modalDateKey = null;
+
+function calNav(dir) { calMonth += dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+
+function renderCalendar() {
+  const title = new Date(calYear, calMonth, 1).toLocaleDateString('cs-CZ',{month:'long',year:'numeric'});
+  document.getElementById('cal-month-title').textContent = title.charAt(0).toUpperCase()+title.slice(1);
+  const grid = document.getElementById('cal-grid');
+  const dayNames = ['Ne','Po','Út','St','Čt','Pá','So'];
+  let html = dayNames.map(d=>`<div class="cal-day-name">${d}</div>`).join('');
+  const first = new Date(calYear, calMonth, 1);
+  let startDow = first.getDay(); // 0=Sun
+  // fill blanks (start from Monday logic: shift so week starts Sun as per dayNames)
+  for(let i=0;i<startDow;i++) html += '<div></div>';
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const today = fmt(new Date());
+  const att = getEmpAttendance(currentUser.id);
+  for(let d=1; d<=daysInMonth; d++) {
+    const date = new Date(calYear, calMonth, d);
+    const key = fmt(date);
+    const dow = date.getDay();
+    const isWeekend = dow===0||dow===6;
+    const isHoliday = !!HOLIDAYS[key];
+    const isToday = key===today;
+    const dayData = att[key];
+    const dayType = dayData?.dayType || null;
+    const hasWork = dayData?.records?.length > 0;
+    let cls = 'cal-day';
+    if (isWeekend) cls += ' weekend';
+    if (isHoliday) cls += ' holiday';
+    if (dayType==='vacation') cls += ' vacation';
+    if (dayType==='sick') cls += ' sick';
+    if (isToday) cls += ' today';
+    if (hasWork && !dayType) cls += ' has-record';
+    let badges = '';
+    if (dayType==='vacation') badges += '<div class="day-badge vacation">DOV</div>';
+    if (dayType==='sick') badges += '<div class="day-badge sick">NEM</div>';
+    if (isHoliday && !dayType) badges += '<div class="day-badge holiday">SV</div>';
+    if (hasWork && !dayType && !isHoliday) badges += '<div class="day-badge work">✓</div>';
+    html += `<div class="${cls}" onclick="openDayModal('${key}',${d})">
+      <div class="day-num">${d}</div>${badges}
+    </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function openDayModal(key, day) {
+  modalDateKey = key;
+  const date = new Date(key+'T12:00:00');
+  document.getElementById('modal-day-title').textContent =
+    date.toLocaleDateString('cs-CZ',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('day-modal').classList.add('open');
+}
+function closeDayModal() { document.getElementById('day-modal').classList.remove('open'); modalDateKey=null; }
+function setDayType(type) {
+  if (!modalDateKey) return;
+  const att = getEmpAttendance(currentUser.id);
+  if (!att[modalDateKey]) att[modalDateKey] = { records:[], dayType:null };
+  att[modalDateKey].dayType = type;
+  saveDB(); renderCalendar(); closeDayModal();
+  const labels = {vacation:'🏖️ Dovolená označena', sick:'🤒 Nemoc označena', null:'✕ Označení odebráno'};
+  showToast(labels[type]||'Uloženo');
+}
+
+// ══════════════════════════════════════════
+//  ADMIN – EMPLOYEES
+// ══════════════════════════════════════════
+function renderAdminEmployees() {
+  const list = document.getElementById('employee-list');
+  if (!DB.employees.length) {
+    list.innerHTML = '<div style="color:var(--text-muted);font-size:.85rem;padding:8px 0">Zatím žádní zaměstnanci. Přidejte prvního zaměstnance výše.</div>';
+    return;
+  }
+  list.innerHTML = DB.employees.map(e => `
+    <div class="employee-item">
+      <div>
+        <div class="employee-name">${e.name}</div>
+        <div class="employee-pin">PIN: ${'●'.repeat(e.pin.length)}</div>
+      </div>
+      <button class="employee-del" onclick="deleteEmployee('${e.id}')">Smazat</button>
+    </div>`).join('');
+}
+
+function addEmployee() {
+  const name = document.getElementById('new-name').value.trim();
+  const pin = document.getElementById('new-pin').value.trim();
+  if (!name) { showToast('⚠️ Zadejte jméno zaměstnance'); return; }
+  if (!/^\d{4}$/.test(pin)) { showToast('⚠️ PIN musí být 4 číslice'); return; }
+  if (DB.employees.length >= 10) { showToast('⚠️ Maximální počet zaměstnanců je 10'); return; }
+  if (DB.employees.find(e=>e.pin===pin)) { showToast('⚠️ Tento PIN již používá jiný zaměstnanec'); return; }
+  const id = 'emp_' + Date.now();
+  DB.employees.push({ id, name, pin });
+  saveDB(); renderAdminEmployees(); renderReportControls();
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-pin').value = '';
+  showToast('✅ Zaměstnanec přidán');
+}
+
+function deleteEmployee(id) {
+  if (!confirm('Opravdu smazat zaměstnance? Všechna jeho data o docházce budou také smazána.')) return;
+  DB.employees = DB.employees.filter(e=>e.id!==id);
+  delete DB.attendance[id];
+  saveDB(); renderAdminEmployees(); renderReportControls();
+  showToast('🗑️ Zaměstnanec smazán');
+}
+
+// ══════════════════════════════════════════
+//  REPORTS
+// ══════════════════════════════════════════
+function renderReportControls() {
+  const empSel = document.getElementById('report-employee');
+  empSel.innerHTML = DB.employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+  const monthSel = document.getElementById('report-month');
+  const months = ['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
+  monthSel.innerHTML = months.map((m,i)=>`<option value="${i}">${m}</option>`).join('');
+  monthSel.value = new Date().getMonth();
+  const yearSel = document.getElementById('report-year');
+  const y = new Date().getFullYear();
+  yearSel.innerHTML = [y-1,y,y+1].map(yr=>`<option value="${yr}">${yr}</option>`).join('');
+  yearSel.value = y;
+}
+
+function buildReportData(empId, year, month) {
+  const emp = DB.employees.find(e=>e.id===empId);
+  if (!emp) return null;
+  const att = DB.attendance[empId] || {};
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const months = ['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
+  let rows = [];
+  let totalWorked=0, totalSat=0, totalSun=0, totalHoliday=0,
+      totalSatHoliday=0, totalSunHoliday=0, vacDays=0, sickDays=0;
+
+  for(let d=1; d<=daysInMonth; d++) {
+    const date = new Date(year, month, d);
+    const key = fmt(date);
+    const dow = date.getDay(); // 0=Ne,6=So
+    const isSat = dow===6;
+    const isSun = dow===0;
+    const isWeekend = isSat || isSun;
+    const isHoliday = !!HOLIDAYS[key];
+    const dayData = att[key] || { records:[], dayType:null };
+    const { worked, breakPairs, firstIn, lastOut } = calcDayHours(dayData.records);
+    const dayType = dayData.dayType;
+
+    if (dayType==='vacation') vacDays++;
+    if (dayType==='sick') sickDays++;
+
+    if (worked > 0) {
+      totalWorked += worked;
+      if (isSat && isHoliday)       totalSatHoliday += worked;
+      else if (isSun && isHoliday)  totalSunHoliday += worked;
+      else if (isSat)               totalSat += worked;
+      else if (isSun)               totalSun += worked;
+      else if (isHoliday)           totalHoliday += worked;
+    }
+
+    let breakStr = breakPairs.map(b=>`${fmtTime(b.from)}–${fmtTime(b.to)}`).join(', ') || '—';
+    let dayLabel = '';
+    if (dayType==='vacation') dayLabel='DOV';
+    else if (dayType==='sick') dayLabel='NEM';
+    else if (isHoliday) dayLabel='SV';
+    else if (isSun) dayLabel='Ne';
+    else if (isSat) dayLabel='So';
+
+    rows.push({
+      date: `${d}.${month+1}.${year}`,
+      dow: ['Ne','Po','Út','St','Čt','Pá','So'][dow],
+      arrivalStr: firstIn ? fmtTime(firstIn) : '—',
+      departureStr: lastOut ? fmtTime(lastOut) : '—',
+      breakStr: breakPairs.length ? breakStr : '—',
+      workedStr: worked>0 ? decToHM(worked) : (dayLabel||'—'),
+      workedDec: worked,
+      isSat, isSun, isWeekend, isHoliday, dayType, dayLabel
+    });
+  }
+  return { emp, year, month, monthName: months[month], rows,
+    totalWorked, totalSat, totalSun, totalHoliday,
+    totalSatHoliday, totalSunHoliday, vacDays, sickDays };
+}
+
+function previewReport() {
+  const empId = document.getElementById('report-employee').value;
+  const month = parseInt(document.getElementById('report-month').value);
+  const year = parseInt(document.getElementById('report-year').value);
+  if (!empId) { showToast('⚠️ Vyberte zaměstnance'); return; }
+  const data = buildReportData(empId, year, month);
+  if (!data) return;
+
+  let html = `<div class="card">
+    <div class="card-title">${data.emp.name} — ${data.monthName} ${data.year}</div>
+    <div style="overflow-x:auto;margin-bottom:16px">
+    <table style="width:100%;border-collapse:collapse;font-size:.78rem">
+    <thead>
+      <tr style="background:var(--primary);color:#fff">
+        <th style="padding:7px 6px;text-align:left">Datum</th>
+        <th style="padding:7px 6px;text-align:left">Den</th>
+        <th style="padding:7px 6px;text-align:center">Příchod</th>
+        <th style="padding:7px 6px;text-align:center">Odchod</th>
+        <th style="padding:7px 6px;text-align:center">Přerušení</th>
+        <th style="padding:7px 6px;text-align:center">Hod.</th>
+      </tr>
+    </thead>
+    <tbody>`;
+  data.rows.forEach(r => {
+    let bg = '';
+    if (r.dayType==='vacation') bg='background:var(--vacation-light)';
+    else if (r.dayType==='sick') bg='background:var(--sick-light)';
+    else if (r.isHoliday && r.isSat) bg='background:#FFF0D0';
+    else if (r.isHoliday && r.isSun) bg='background:#FFE8C0';
+    else if (r.isHoliday) bg='background:#FFF8E7';
+    else if (r.isSat) bg='background:#F0F4FF';
+    else if (r.isSun) bg='background:#F8F9FB';
+    html += `<tr style="${bg}">
+      <td style="padding:5px 6px">${r.date}</td>
+      <td style="padding:5px 6px">${r.dow}</td>
+      <td style="padding:5px 6px;text-align:center">${r.arrivalStr}</td>
+      <td style="padding:5px 6px;text-align:center">${r.departureStr}</td>
+      <td style="padding:5px 6px;text-align:center;font-size:.72rem">${r.breakStr}</td>
+      <td style="padding:5px 6px;text-align:center;font-weight:${r.workedDec>0?'700':'400'}">${r.workedStr}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>
+    <div class="stats-grid">
+      <div class="stat-card" style="grid-column:1/-1;background:var(--accent-light)"><div class="stat-label">Celkem odpracováno</div><div class="stat-value" style="color:var(--accent)">${decToHM(data.totalWorked)}</div></div>
+      <div class="stat-card"><div class="stat-label">Sobota</div><div class="stat-value">${decToHM(data.totalSat)}</div></div>
+      <div class="stat-card"><div class="stat-label">Neděle</div><div class="stat-value">${decToHM(data.totalSun)}</div></div>
+      <div class="stat-card"><div class="stat-label">Státní svátek (prac. den)</div><div class="stat-value">${decToHM(data.totalHoliday)}</div></div>
+      <div class="stat-card"><div class="stat-label">Sobota + svátek</div><div class="stat-value">${decToHM(data.totalSatHoliday)}</div></div>
+      <div class="stat-card"><div class="stat-label">Neděle + svátek</div><div class="stat-value">${decToHM(data.totalSunHoliday)}</div></div>
+      <div class="stat-card"><div class="stat-label">Dovolená (dny)</div><div class="stat-value">${data.vacDays}</div></div>
+      <div class="stat-card"><div class="stat-label">Pracovní neschopnost</div><div class="stat-value">${data.sickDays}</div></div>
+    </div>
+  </div>`;
+  document.getElementById('report-preview').innerHTML = html;
+}
+
+function generatePDF() {
+  const empId = document.getElementById('report-employee').value;
+  const month = parseInt(document.getElementById('report-month').value);
+  const year = parseInt(document.getElementById('report-year').value);
+  if (!empId) { showToast('⚠️ Vyberte zaměstnance'); return; }
+  const data = buildReportData(empId, year, month);
+  if (!data) return;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  // Header
+  doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.setTextColor(26,60,94);
+  doc.text('DOCHÁZKOVÝ LIST', 105, 20, {align:'center'});
+  doc.setFontSize(11); doc.setFont('helvetica','normal');
+  doc.setTextColor(60,60,60);
+  doc.text(`Zaměstnanec: ${data.emp.name}`, 15, 30);
+  doc.text(`Období: ${data.monthName} ${data.year}`, 15, 36);
+  doc.text(`Vygenerováno: ${new Date().toLocaleDateString('cs-CZ')}`, 130, 30);
+
+  // Table
+  const tableRows = data.rows.map(r => [
+    r.date, r.dow, r.arrivalStr, r.departureStr, r.breakStr, r.workedStr
+  ]);
+
+  doc.autoTable({
+    head: [['Datum','Den','Příchod','Odchod','Přerušení','Hodiny']],
+    body: tableRows,
+    startY: 42,
+    styles: { fontSize: 8, cellPadding: 2.5, font: 'helvetica' },
+    headStyles: { fillColor: [26,60,94], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
+    columnStyles: {
+      0: { cellWidth: 24 }, 1: { cellWidth: 12 }, 2: { cellWidth: 22 },
+      3: { cellWidth: 22 }, 4: { cellWidth: 55 }, 5: { cellWidth: 22 }
+    },
+    didParseCell: function(hookData) {
+      if (hookData.section === 'body') {
+        const r = data.rows[hookData.row.index];
+        if (r.dayType==='vacation') hookData.cell.styles.fillColor = [240,235,248];
+        else if (r.dayType==='sick') hookData.cell.styles.fillColor = [253,240,234];
+        else if (r.isHoliday && r.isSat) hookData.cell.styles.fillColor = [255,240,208];
+        else if (r.isHoliday && r.isSun) hookData.cell.styles.fillColor = [255,232,192];
+        else if (r.isHoliday) hookData.cell.styles.fillColor = [255,248,231];
+        else if (r.isSat) hookData.cell.styles.fillColor = [240,244,255];
+        else if (r.isSun) hookData.cell.styles.fillColor = [248,249,251];
+      }
+    },
+    margin: { left: 15, right: 15 }
+  });
+
+  // Summary box
+  const finalY = doc.lastAutoTable.finalY + 8;
+  const boxH = 62;
+  doc.setFillColor(240, 244, 248);
+  doc.roundedRect(15, finalY, 180, boxH, 3, 3, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(26,60,94);
+  doc.text('SHRNUTÍ', 20, finalY+8);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.8); doc.setTextColor(40,40,40);
+
+  // Two columns, 4 rows each
+  const summaryData = [
+    ['Celkem odpracováno:', decToHM(data.totalWorked)],
+    ['Sobota:', decToHM(data.totalSat)],
+    ['Neděle:', decToHM(data.totalSun)],
+    ['Státní svátek (prac. den):', decToHM(data.totalHoliday)],
+    ['Sobota + svátek:', decToHM(data.totalSatHoliday)],
+    ['Neděle + svátek:', decToHM(data.totalSunHoliday)],
+    ['Dovolená:', `${data.vacDays} dní`],
+    ['Pracovní neschopnost:', `${data.sickDays} dní`],
+  ];
+
+  summaryData.forEach(([label, val], i) => {
+    const col = i < 4 ? 0 : 1;
+    const row = i < 4 ? i : i - 4;
+    const x = col === 0 ? 20 : 112;
+    const y = finalY + 16 + (row * 10);
+    doc.setFont('helvetica','normal'); doc.setTextColor(80,80,80);
+    doc.text(label, x, y);
+    doc.setFont('helvetica','bold'); doc.setTextColor(26,60,94);
+    doc.text(val, x + 68, y);
+  });
+
+  // Legend
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(120,120,120);
+  doc.text('Barvy: fialová = dovolená | oranžová = nemoc | žlutá = státní svátek | šedá = víkend', 15, finalY + boxH + 6);
+
+  // Signature line
+  const sigY = doc.internal.pageSize.height - 25;
+  doc.setFontSize(9); doc.setTextColor(60,60,60);
+  doc.line(15, sigY, 75, sigY); doc.line(125, sigY, 190, sigY);
+  doc.text('Zaměstnanec', 15, sigY+5);
+  doc.text('Vedoucí / Mzdová účetní', 125, sigY+5);
+
+  doc.save(`dochazka_${data.emp.name.replace(' ','_')}_${data.monthName}_${data.year}.pdf`);
+  showToast('📄 PDF bylo staženo');
+}
+
+// ══════════════════════════════════════════
+//  BACKUP
+// ══════════════════════════════════════════
+function exportBackup() {
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `dochazka_zaloha_${fmt(new Date())}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('💾 Záloha stažena');
+}
+function importBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!imported.employees || !imported.attendance) throw new Error('Neplatný formát');
+      if (!confirm('Opravdu obnovit zálohu? Stávající data budou přepsána.')) return;
+      DB = imported;
+      saveDB(); renderAdminEmployees(); renderReportControls();
+      showToast('✅ Záloha obnovena');
+    } catch(err) { showToast('⚠️ Chyba při načítání zálohy'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+let toastTimeout = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  if (toastTimeout) clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+loadDB();
+
+// ── SERVICE WORKER (PWA) ──
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'dochazka-v1';
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html'])));
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => { self.clients.claim(); });
+    self.addEventListener('fetch', e => {
+      e.respondWith(
+        caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('./')))
+      );
+    });
+  `;
+  const blob = new Blob([swCode], {type: 'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
+
+// ── INSTALL PROMPT ──
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show install button on login screen
+  const btn = document.createElement('button');
+  btn.className = 'login-admin-btn';
+  btn.style.cssText = 'margin-top:8px;background:var(--primary);color:#fff;border-color:var(--primary)';
+  btn.textContent = '📲 Nainstalovat aplikaci';
+  btn.onclick = () => {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => { deferredPrompt = null; btn.remove(); });
+  };
+  document.getElementById('admin-toggle-btn').after(btn);
+});
+
+</script>
+</body>
+</html>
