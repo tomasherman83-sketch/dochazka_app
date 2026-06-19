@@ -1085,21 +1085,38 @@ loadDB();
 // ── SERVICE WORKER (PWA) ──
 if ('serviceWorker' in navigator) {
   const swCode = `
-    const CACHE = 'dochazka-v1';
+    const CACHE = 'dochazka-v2';
+    const URLS = ['./'];
     self.addEventListener('install', e => {
-      e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html'])));
-      self.skipWaiting();
+      e.waitUntil(
+        caches.open(CACHE).then(c => c.addAll(URLS)).then(() => self.skipWaiting())
+      );
     });
-    self.addEventListener('activate', e => { self.clients.claim(); });
+    self.addEventListener('activate', e => {
+      e.waitUntil(
+        caches.keys().then(keys =>
+          Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+        ).then(() => self.clients.claim())
+      );
+    });
     self.addEventListener('fetch', e => {
+      if (e.request.method !== 'GET') return;
       e.respondWith(
-        caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('./')))
+        caches.match(e.request).then(cached => {
+          if (cached) return cached;
+          return fetch(e.request).then(resp => {
+            if (!resp || resp.status !== 200) return resp;
+            const clone = resp.clone();
+            caches.open(CACHE).then(c => c.put(e.request, clone));
+            return resp;
+          }).catch(() => caches.match('./'));
+        })
       );
     });
   `;
   const blob = new Blob([swCode], {type: 'application/javascript'});
   const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl).catch(()=>{});
+  navigator.serviceWorker.register(swUrl, {scope: './'}).catch(err => console.log('SW:', err));
 }
 
 // ── INSTALL PROMPT ──
